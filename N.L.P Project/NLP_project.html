@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sentiment Analyzer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Main styles for glassmorphism, gradient, card, and UI -->
+  <style>
+    /* Background gradient */
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #dbeafe 0%, #e9d5ff 100%);
+      font-family: 'Inter', 'Poppins', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .centered-container {
+      min-height: 100vh;
+      width: 100vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+    }
+
+    .glass-card {
+      background: rgba(255,255,255,0.28);
+      backdrop-filter: blur(13px);
+      border-radius: 28px;
+      box-shadow: 0 8px 48px 0 rgba(37, 47, 88, 0.15);
+      padding: 38px 30px 26px 30px;
+      min-width: 350px;
+      max-width: 92vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: cardIn 0.98s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes cardIn {
+      0% { transform: translateY(70px) scale(0.97); opacity: 0; }
+      80% { transform: translateY(-14px) scale(1.03); }
+      100% { transform: translateY(0) scale(1); opacity: 1;}
+    }
+
+    h1 {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: #253058;
+      margin-bottom: 15px;
+      letter-spacing: 0.8px;
+      text-shadow: 0px 1px 5px #e9d5ffc0;
+    }
+
+    label {
+      font-size: 1.06rem;
+      font-weight: 600;
+      color: #3d4261;
+      margin-bottom: 12px;
+      align-self: flex-start;
+    }
+
+    textarea {
+      width: 270px;
+      min-height: 90px;
+      resize: none;
+      border: 1.5px solid #d9d4ee;
+      border-radius: 11px;
+      padding: 15px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: rgba(241,244,255,0.70);
+      color: #292e43;
+      margin-bottom: 22px;
+      outline: none;
+      transition: border-color 0.2s, background 0.19s;
+      box-shadow: 0 1.5px 12px #e9d5ff3a;
+    }
+    textarea:focus {
+      border-color: #b6befa;
+      background: #fff;
+    }
+    .analyze-btn {
+      background: linear-gradient(90deg, #6173ff 65%, #afb4ff 100%);
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      padding: 13px 38px;
+      font-size: 1.11rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 12px rgba(95, 98, 168, 0.09);
+      margin-bottom: 14px;
+      transition: background 0.21s, 
+                  transform 0.16s, 
+                  box-shadow 0.23s;
+      will-change: transform;
+    }
+    .analyze-btn:hover, .analyze-btn:focus {
+      background: linear-gradient(90deg, #4152de 65%, #8d95ee 100%);
+      transform: scale(1.045) translateY(-1px);
+      box-shadow: 0 6px 22px rgba(80,90,200,0.17);
+    }
+
+    .error-message {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 14px;
+      background: #feeff0;
+      color: #ce3140;
+      border-radius: 8px;
+      border-left: 6px solid #fc6971;
+      font-size: 1.09rem;
+      font-weight: 500;
+      margin-top: 7px;
+      box-shadow: 0 1.5px 12px #ffdadac5;
+    }
+
+    .result-box {
+      margin-top: 15px;
+      width: 98%;
+      min-height: 47px;
+      max-width: 300px;
+      border-radius: 11px;
+      padding: 17px;
+      display: none;
+      align-items: center;
+      justify-content: flex-start;
+      font-size: 1.15rem;
+      font-weight: 500;
+      gap: 14px;
+      letter-spacing: 0.18px;
+      background: #f4f6fbce;
+      text-align: center;
+      box-shadow: 0 1px 17px #e9d5ff22;
+      transition: background 0.16s, box-shadow 0.15s;
+      animation: fadeIn 0.6s cubic-bezier(.45,.53,.41,.94);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(18px);}
+      to { opacity: 1; transform: none;}
+    }
+
+    .result-positive {
+      background: #e5faea;
+      color: #239658;
+      border-left: 8px solid #31cb7d;
+    }
+    .result-negative {
+      background: #fbeaea;
+      color: #d53a2a;
+      border-left: 8px solid #ed6b6b;
+    }
+    .result-neutral {
+      background: #eaedf4;
+      color: #4766a2;
+      border-left: 8px solid #95b6ee;
+    }
+
+    .score-badge {
+      margin: 0 7px;
+      padding: 2.5px 9px;
+      font-size: 0.93rem;
+      border-radius: 6px;
+      font-weight: 700;
+      background: #f7f7fa;
+      border: 1px solid #dbeafe;
+      color: #585e7f;
+      vertical-align: middle;
+      display: inline-block;
+    }
+
+    .result-summary {
+      display: block;
+      font-size: 0.98rem;
+      margin-top: 2.5px;
+      color: #747081;
+      letter-spacing: 0.01rem;
+    }
+
+    /* Footer styled fixed at bottom of screen */
+    footer {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100vw;
+      background: rgba(245,244,255,0.86);
+      text-align: center;
+      font-size: 1.025rem;
+      color: #7a88b7;
+      letter-spacing: 0.04rem;
+      padding: 14px 0 8px 0;
+      box-shadow: 0 -2px 34px #e9d5ff36;
+      z-index: 10;
+      border-top: 1px solid #f3f3ff;
+      user-select: none;
+    }
+
+    @media (max-width: 420px) {
+      .glass-card {
+        padding: 16px 4vw 20px 4vw;
+        min-width: 0; width: 96vw;
+      }
+      textarea { width: 90vw; min-width: 0;}
+      .result-box {max-width: 90vw;}
+    }
+  </style>
+</head>
+<body>
+  <div class="centered-container">
+    <div class="glass-card">
+      <h1>Sentiment Analyzer</h1>
+      <label for="opinion-text">Enter your opinion</label>
+      <textarea id="opinion-text" placeholder="Type your thoughts here..." spellcheck="true"></textarea>
+      <button class="analyze-btn" id="analyze-btn">Analyze Sentiment</button>
+      <div id="error-message" class="error-message" style="display:none;">
+        <span>⚠️</span>
+        <span class="error-text"></span>
+      </div>
+      <div id="result-box" class="result-box"></div>
+    </div>
+  </div>
+  <footer>
+    Developed by: Ajita Karki <br>
+    SOE, Pokhara University
+  </footer>
+  <script>
+    // --- Sentiment Analyzer: simple JavaScript, beginner-friendly ---
+
+    // List of positive and negative words for sentiment counting
+    const positiveWords = [
+      "good","great","excellent","awesome","happy","love","wonderful","fantastic",
+"amazing","positive","satisfied","best","enjoyed","pleased","nice","like",
+"delightful","superb","outstanding","perfect","brilliant","cool","favorite",
+"fun","impressed","joy","joyful","cheerful","smile","smiling","excited",
+"exciting","grateful","thankful","blessed","peaceful","calm","relaxed",
+"proud","confident","motivated","inspired","hopeful","optimistic","kind",
+"friendly","helpful","sweet","lovely","beautiful","handsome","attractive",
+"cute","charming","positive","supportive","encouraging","trustworthy",
+"honest","respectful","polite","generous","caring","warm","welcoming",
+"successful","winning","achieved","achievement","progress","improving",
+"improved","growth","productive","efficient","useful","valuable","worthwhile",
+"smart","clever","intelligent","talented","skilled","creative","innovative",
+"bright","energetic","active","strong","healthy","fit","safe","secure",
+"comfortable","smooth","easy","simple","clear","clean","fresh","new",
+"reliable","stable","steady","ready","prepared","lucky","fortunate",
+"enjoyable","pleasant","satisfying","rewarding","peace","harmony","balance"
+    ];
+    const negativeWords = [
+      "bad","worst","poor","awful","terrible","sad","hate","horrible","disappointed",
+"negative","dislike","unhappy","angry","annoyed","upset","pain","problem",
+"frustrated","boring","sucks","disgusting","unpleasant","fail","flawed","inferior",
+"ugly","dirty","messy","confusing","confused","hard","difficult","tough",
+"slow","late","delay","broken","damaged","faulty","useless","worthless",
+"annoying","irritating","stress","stressed","stressful","tired","exhausted",
+"lazy","weak","sick","ill","unhealthy","unsafe","dangerous","risky","scary",
+"fear","afraid","worried","anxious","nervous","tense","depressed","lonely",
+"empty","hopeless","helpless","miserable","cry","crying","hurt","hurtful",
+"rude","mean","selfish","greedy","dishonest","unfair","disrespectful",
+"offensive","toxic","hostile","aggressive","violent","threatening",
+"failure","losing","lost","waste","wasted","regret","regretted","mistake",
+"error","wrong","incorrect","bug","issue","complaint","complain","complaining",
+"noisy","crowded","dirty","smelly","expensive","overpriced","cheap","low",
+"poorly","unstable","unreliable","insecure","blocked","stuck","jammed",
+"crash","crashed","lag","laggy","freeze","frozen","timeout","down","offline"
+    ];
+
+    // Helper: English 'dictionary' only includes common words for gibberish detection
+    const commonEnglishWords = new Set([
+      // (For demo: a basic compact wordlist)
+      ...positiveWords,
+      ...negativeWords,
+      "i","you","he","she","it","we","they",
+      "the","and","is","are","my","your","his","her","our","their",
+      "this","that","with","not","so","very","because","was","for",
+      "to","have","has","in","of","be","on","but","by","do","did",
+      "what","who","how","where","when","why","from","at","all","if",
+      "a","an","me","there","can","will","just","would","about","feel",
+      "thank","thanks","more","less","best","recommend","don","does"
+    ]);
+
+    // Helper: Split and clean text input into lowercased words (retaining a-z only)
+    function getWords(text) {
+      return text
+        .toLowerCase()
+        .replace(/[^a-z\s]/g, '')
+        .split(/\s+/)
+        .filter(Boolean);
+    }
+
+    // Detect gibberish: returns true if over half words are not in the dictionary
+    function isGibberish(words) {
+      if (words.length === 0) return true;
+      let nonDictionaryCount = 0;
+      for (let w of words) {
+        if (!commonEnglishWords.has(w)) nonDictionaryCount++;
+      }
+      // If more than 50% unknown words & at least 2 words, treat as gibberish
+      return (words.length >= 2 && nonDictionaryCount / words.length > 0.5) || (words.length === 1 && !commonEnglishWords.has(words[0]));
+    }
+
+    // Core: Analyze sentiment, returns type, score, and extra info
+    function analyzeSentiment(text) {
+      const words = getWords(text);
+      let score = 0, posCount = 0, negCount = 0;
+
+      for (const word of words) {
+        if (positiveWords.includes(word)) { score += 1; posCount += 1;}
+        if (negativeWords.includes(word)) { score -= 1; negCount += 1;}
+      }
+
+      // Determine sentiment type and style
+      let type = "Neutral", emoji = "😐", boxClass = "result-neutral";
+      if (score > 0) { type = "Positive"; emoji = "😊"; boxClass = "result-positive"; }
+      if (score < 0) { type = "Negative"; emoji = "😞"; boxClass = "result-negative"; }
+
+      // Calculate summary info: word count, emotion strength
+      let emotionStrength = "";
+      if (Math.abs(score) >= 3) emotionStrength = "Very " + type;
+      else if (Math.abs(score) === 2) emotionStrength = "Clearly " + type;
+      else if (Math.abs(score) === 1) emotionStrength = "Somewhat " + type;
+      else emotionStrength = "Neutral";
+
+      return {
+        type, emoji, boxClass,
+        score,
+        wordCount: words.length,
+        positive: posCount,
+        negative: negCount,
+        emotionStrength
+      };
+    }
+
+    // DOM elements
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const opinionText = document.getElementById('opinion-text');
+    const resultBox = document.getElementById('result-box');
+    const errorMessage = document.getElementById('error-message');
+    const errorText = errorMessage.querySelector('.error-text');
+
+    // Main click handler
+    analyzeBtn.addEventListener('click', () => {
+      let text = opinionText.value.trim();
+
+      // Clean up result box and error
+      resultBox.style.display = 'none';
+      resultBox.className = 'result-box';
+      errorMessage.style.display = 'none';
+
+      // Input validation: empty check
+      if (!text) {
+        showError("Please enter a valid opinion using real words.");
+        return;
+      }
+
+      // Clean word list for gibberish detection
+      let words = getWords(text);
+
+      // Check for gibberish: reject if too many non-dictionary words
+      if (isGibberish(words)) {
+        showError("Please enter a valid opinion using real words.");
+        return;
+      }
+
+      // If valid, analyze and show result
+      let result = analyzeSentiment(text);
+
+      // Build score, summary
+      let scoreBadge = `<span class="score-badge">Score: ${result.score} (${result.type})</span>`;
+      let summary = `
+        <span class="result-summary">
+          Words: ${result.wordCount} &nbsp;|&nbsp;
+          Positive: ${result.positive} &nbsp; Negative: ${result.negative}<br>
+          <b>${result.emotionStrength}</b>
+        </span>
+      `;
+
+      // Show result box
+      resultBox.style.display = 'flex';
+      resultBox.className = `result-box ${result.boxClass}`;
+      resultBox.innerHTML =
+        `<span style="font-size:2rem;line-height:1.1;">${result.emoji}</span>` +
+        `<span>${result.type} ${scoreBadge}${summary}</span>`;
+    });
+
+    // Show error nicely
+    function showError(msg) {
+      errorText.innerHTML = msg;
+      errorMessage.style.display = 'flex';
+    }
+
+    // Hide error/result when user types again
+    opinionText.addEventListener('input', () => {
+      errorMessage.style.display = 'none';
+      resultBox.style.display = 'none';
+    });
+
+    // UX: Press Enter + Ctrl to analyze quickly
+    opinionText.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && (e.key === "Enter" || e.keyCode === 13)) {
+        analyzeBtn.click();
+      }
+    });
+  </script>
+</body>
+</html>
